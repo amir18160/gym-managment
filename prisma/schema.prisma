@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model bill {
+  bill_id        Int         @id(map: "PK_bill") @default(autoincrement())
+  bill_value     Int
+  is_paid        Boolean
+  member_plan_id Int
+  member_plan    member_plan @relation(fields: [member_plan_id], references: [member_plan_id], onUpdate: NoAction, map: "FK_bill_member_plan")
+}
+
+model employee {
+  employee_id Int       @id(map: "PK_employee") @default(autoincrement())
+  person_id   Int
+  person      person    @relation(fields: [person_id], references: [person_id], onUpdate: NoAction, map: "FK_employee_person")
+  salary      salary[]
+  trainer     trainer[]
+}
+
+model hall {
+  hall_id           Int                @id(map: "PK_hall") @default(autoincrement())
+  hall_max_capacity Int
+  hall_name         String             @db.VarChar(100)
+  trainer_schedule  trainer_schedule[]
+}
+
+model in_out_action {
+  in_out_action_id   Int          @id(map: "PK_in_out_action") @default(autoincrement())
+  in_out_action_name String       @db.VarChar(50)
+  in_out_log         in_out_log[]
+}
+
+model in_out_log {
+  in_out_log_id     Int           @id(map: "PK_in_out_log") @default(autoincrement())
+  time              DateTime      @db.DateTime
+  int_out_action_id Int
+  person_id         Int
+  in_out_action     in_out_action @relation(fields: [int_out_action_id], references: [in_out_action_id], onUpdate: NoAction, map: "FK_in_out_log_in_out_action")
+  person            person        @relation(fields: [person_id], references: [person_id], onUpdate: NoAction, map: "FK_in_out_log_person")
+}
+
+model member_plan {
+  member_plan_id Int      @id(map: "PK_member_plan") @default(autoincrement())
+  started_at     DateTime @db.Date
+  end_at         DateTime @db.Date
+  person_id      Int
+  plan_id        Int
+  bill           bill[]
+  person         person   @relation(fields: [person_id], references: [person_id], onUpdate: NoAction, map: "FK_member_plan_person")
+  plan           plan     @relation(fields: [plan_id], references: [plan_id], onUpdate: NoAction, map: "FK_member_plan_plan")
+}
+
+model person {
+  person_id    Int           @id(map: "PK_person") @default(autoincrement())
+  phone_number String?       @db.VarChar(20)
+  first_name   String        @db.VarChar(100)
+  last_name    String        @db.VarChar(100)
+  role_id      Int
+  employee     employee[]
+  in_out_log   in_out_log[]
+  member_plan  member_plan[]
+  role         role          @relation(fields: [role_id], references: [role_id], onUpdate: NoAction, map: "FK_person_role")
+}
+
+model plan {
+  plan_id      Int            @id(map: "PK_plan") @default(autoincrement())
+  plan_length  Int
+  plan_price   Int
+  has_trainer  Boolean
+  member_plan  member_plan[]
+  plan_trainer plan_trainer[]
+}
+
+model plan_trainer {
+  plan_trainer_id Int     @id(map: "PK_plan_trainer") @default(autoincrement())
+  plan_id         Int
+  trainer_id      Int
+  plan            plan    @relation(fields: [plan_id], references: [plan_id], onUpdate: NoAction, map: "FK_plan_trainer_plan")
+  trainer         trainer @relation(fields: [trainer_id], references: [trainer_id], onUpdate: NoAction, map: "FK_plan_trainer_trainer")
+}
+
+model role {
+  role_id   Int      @id(map: "PK_role") @default(autoincrement())
+  role_name String   @db.VarChar(100)
+  person    person[]
+}
+
+model salary {
+  salary_id    Int      @id(map: "PK_salary") @default(autoincrement())
+  hourly_rate  Int
+  payment_date DateTime @db.DateTime
+  final_value  Int
+  employee_id  Int
+  employee     employee @relation(fields: [employee_id], references: [employee_id], onUpdate: NoAction, map: "FK_salary_employee")
+}
+
+model sysdiagrams {
+  name         String @db.NVarChar(128)
+  principal_id Int
+  diagram_id   Int    @id(map: "PK__sysdiagr__C2B05B61E85219A2") @default(autoincrement())
+  version      Int?
+  definition   Bytes?
+
+  @@unique([principal_id, name], map: "UK_principal_name")
+}
+
+model trainer {
+  trainer_id       Int                @id(map: "PK_tainer") @default(autoincrement())
+  employee_id      Int
+  plan_trainer     plan_trainer[]
+  employee         employee           @relation(fields: [employee_id], references: [employee_id], onUpdate: NoAction, map: "FK_trainer_employee")
+  trainer_schedule trainer_schedule[]
+}
+
+model trainer_schedule {
+  trainer_schedule_id         Int      @id(map: "PK_trainer_schedule") @default(autoincrement())
+  trainer_schedule_start_time DateTime @db.Time
+  trainer_schedule_end_time   DateTime @db.Time
+  session_date                DateTime @db.Date
+  trainer_id                  Int
+  hall_id                     Int
+  hall                        hall     @relation(fields: [hall_id], references: [hall_id], onUpdate: NoAction, map: "FK_trainer_schedule_hall")
+  trainer                     trainer  @relation(fields: [trainer_id], references: [trainer_id], onUpdate: NoAction, map: "FK_trainer_schedule_trainer")
+}
