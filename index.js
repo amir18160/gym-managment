@@ -8,7 +8,7 @@ dotenv.config({ path: "./.env" });
         console.log("Seeding database...");
 
         // Seed roles
-        const rolesData = ["Member", "Trainer", "Admin"].map((roleName) => ({
+        const rolesData = ["Member", "Trainer", "Employee"].map((roleName) => ({
             role_name: roleName,
         }));
         const roles = await prisma.role.createMany({ data: rolesData });
@@ -16,40 +16,98 @@ dotenv.config({ path: "./.env" });
 
         // Seed people
         const peopleData = [];
-        for (let i = 0; i < 900; i++) {
+        const numMembers = 800;
+        const numTrainers = 50;
+        const numEmployees = 20; // Includes manager
+
+        for (let i = 0; i < numMembers; i++) {
             peopleData.push({
                 first_name: faker.fakerEN_US.person.firstName(),
                 last_name: faker.fakerEN_US.person.lastName(),
                 phone_number: faker.fakerEN_US.phone.number(),
-                role_id: faker.fakerEN_US.number.int({
-                    min: 1,
-                    max: rolesData.length,
-                }),
+                role_id: 1, // Member
             });
         }
+
+        for (let i = 0; i < numTrainers; i++) {
+            peopleData.push({
+                first_name: faker.fakerEN_US.person.firstName(),
+                last_name: faker.fakerEN_US.person.lastName(),
+                phone_number: faker.fakerEN_US.phone.number(),
+                role_id: 2, // Trainer
+            });
+        }
+
+        for (let i = 0; i < numEmployees; i++) {
+            peopleData.push({
+                first_name: faker.fakerEN_US.person.firstName(),
+                last_name: faker.fakerEN_US.person.lastName(),
+                phone_number: faker.fakerEN_US.phone.number(),
+                role_id: 3, // Employee
+            });
+        }
+
         await prisma.person.createMany({ data: peopleData });
         const people = await prisma.person.findMany();
         console.log(`Inserted ${people.length} people.`);
 
-        // Seed employees
+        // Seed employees (including one manager)
         const employeeData = [];
-        for (let i = 0; i < 30; i++) {
-            const person = faker.fakerEN_US.helpers.arrayElement(
-                people.filter((p) => p.role_id === 2)
-            ); // Trainers
+        const managerPerson = people.find((p) => p.role_id === 3); // Pick the first employee as manager
+
+        employeeData.push({
+            person_id: managerPerson.person_id,
+        }); // Add manager
+
+        const otherEmployees = people.filter(
+            (p) => p.role_id === 3 && p.person_id !== managerPerson.person_id
+        );
+
+        otherEmployees.forEach((person) => {
             employeeData.push({ person_id: person.person_id });
-        }
+        });
+
         await prisma.employee.createMany({ data: employeeData });
         const employees = await prisma.employee.findMany();
         console.log(`Inserted ${employees.length} employees.`);
 
         // Seed trainers
-        const trainerData = employees.map((emp) => ({
-            employee_id: emp.employee_id,
-        }));
+        const trainerData = employees
+            .slice(0, numTrainers) // Limit to the number of trainers
+            .map((emp) => ({
+                employee_id: emp.employee_id,
+            }));
+
         await prisma.trainer.createMany({ data: trainerData });
         const trainers = await prisma.trainer.findMany();
         console.log(`Inserted ${trainers.length} trainers.`);
+
+        // Seed salaries
+        const salaryData = [];
+        employees.forEach((emp) => {
+            const numSalaries = faker.fakerEN_US.number.int({
+                min: 3,
+                max: 50,
+            });
+            for (let i = 0; i < numSalaries; i++) {
+                salaryData.push({
+                    hourly_rate: faker.fakerEN_US.number.int({
+                        min: 5,
+                        max: 30,
+                    }),
+                    payment_date: faker.fakerEN_US.date.past({ years: 2 }),
+                    final_value: faker.fakerEN_US.number.int({
+                        min: 1000,
+                        max: 5000,
+                    }),
+                    employee_id: emp.employee_id,
+                });
+            }
+        });
+
+        await prisma.salary.createMany({ data: salaryData });
+        const salaries = await prisma.salary.findMany();
+        console.log(`Inserted ${salaries.length} salaries.`);
 
         // Seed halls
         const hallData = [];
