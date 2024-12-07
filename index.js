@@ -166,7 +166,7 @@ dotenv.config({ path: "./.env" });
                 min: 1,
                 max: 30,
             });
-            r;
+
             for (let i = 0; i < numSchedules; i++) {
                 const hall = faker.fakerEN_US.helpers.arrayElement(halls);
                 const sessionDate = faker.fakerEN_US.date.future({ years: 1 });
