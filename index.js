@@ -144,6 +144,53 @@ dotenv.config({ path: "./.env" });
         const plans = await prisma.plan.findMany();
         console.log(`Inserted ${plans.length} plans.`);
 
+        // seed plan trainers
+        const planTrainerData = [];
+        plans.forEach((plan) => {
+            if (plan.has_trainer) {
+                const trainer = faker.fakerEN_US.helpers.arrayElement(trainers); // Assign a random trainer to the plan
+                planTrainerData.push({
+                    plan_id: plan.plan_id,
+                    trainer_id: trainer.trainer_id,
+                });
+            }
+        });
+        await prisma.plan_trainer.createMany({ data: planTrainerData });
+        const planTrainers = await prisma.plan_trainer.findMany();
+        console.log(`Inserted ${planTrainers.length} plan trainers.`);
+
+        // Seed trainer_schedule
+        const trainerScheduleData = [];
+        trainers.forEach((trainer) => {
+            const numSchedules = faker.fakerEN_US.number.int({
+                min: 1,
+                max: 30,
+            });
+            r;
+            for (let i = 0; i < numSchedules; i++) {
+                const hall = faker.fakerEN_US.helpers.arrayElement(halls);
+                const sessionDate = faker.fakerEN_US.date.future({ years: 1 });
+
+                const startDateTime = faker.fakerEN_US.date
+                    .soon({ days: 1 })
+                    .toISOString();
+                const endDateTime = new Date(
+                    new Date(startDateTime).getTime() + 2 * 60 * 60 * 1000
+                ).toISOString();
+
+                trainerScheduleData.push({
+                    trainer_id: trainer.trainer_id,
+                    hall_id: hall.hall_id,
+                    session_date: sessionDate,
+                    trainer_schedule_start_time: startDateTime,
+                    trainer_schedule_end_time: endDateTime,
+                });
+            }
+        });
+        await prisma.trainer_schedule.createMany({ data: trainerScheduleData });
+        const trainerSchedules = await prisma.trainer_schedule.findMany();
+        console.log(`Inserted ${trainerSchedules.length} trainer schedules.`);
+
         // Seed member plans
         const memberPlanData = [];
         for (let i = 0; i < 550; i++) {
